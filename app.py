@@ -43,41 +43,32 @@ class DownloadClient(OSMixin):
         setattr(type(self), 'COOKIES', cookies) # COOKIES is static variable
         
     def _get_menu(self):
-        print('=====================================Start Menu Parsing=====================================================')
         response = requests.get(self.__class__.BASE_URL, cookies=self.__class__.COOKIES)
         menu_parser = parsers.MenuPageParser(response.text)
         setattr(self, 'menu_dict', menu_parser.parse())
-        print('=====================================End Menu Parsing=====================================================')
 
     def _get_list(self):
-        print('=====================================Start List Parsing=====================================================')
         for menu_name, submenus in self.menu_dict.items():
             for submenu in submenus:
                 url = submenu['url']
                 try:
                     submenu['resources'] = resources.ResourceSet()
-                    print('=============> List Url => ', url)
                     response = requests.get(url, cookies=self.__class__.COOKIES)
                     num_pages = parsers.ListPageParser.get_num_pages(response.text)
                     get_range = parsers.ListPageParser.generate_page_range(num_pages)
                     for page_num in get_range:
                         new_url = parsers.ListPageParser.generate_valid_url(url, page_num)
-                        print('=========================> List Url(Pagination) => ', new_url)
                         response = requests.get(new_url, cookies=self.__class__.COOKIES)
                         list_parser = parsers.ListPageParser(response.text)
                         resource_set = list_parser.parse()
                         submenu['resources'].add(resource_set)
                 except requests.exceptions.RequestException:
-                    print('XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX Http Problem XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX')
                     time.sleep(15)
-        print('=====================================End List Parsing=====================================================')
 
     def _get_content(self):
-        print('=====================================Start Content Parsing=====================================================')
         for menu_name, submenus in self.menu_dict.items():
             for submenu in submenus:
                 for resource in submenu['resources']:
-                    print('========================> Resource Url => ', resource.url)
                     try:
                         response = requests.get(resource.url, cookies=self.__class__.COOKIES)
                         content_parser = parsers.ContentPageParser(response.text)
@@ -96,20 +87,15 @@ class DownloadClient(OSMixin):
                                     try:
                                         # Ford's server ignores X-Requested-With: XMLHttpRequest
                                         xhr_response = requests.get(self.__class__.XHR_BASE_URL, params=xhr_value, cookies=self.__class__.COOKIES)
-                                        print('==========================================> xhr_url ', xhr_response.url)
                                         text = parsers.ContentPageParser.xhr_response_parser(xhr_response.text)
                                         section_value['text'] = text
                                     except requests.exceptions.RequestException:
-                                        print('XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX Http Problem XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX')
                                         time.sleep(15)
                     except requests.exceptions.RequestException:
-                        print('XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX Http Problem XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX')
                         time.sleep(15)
                         # wait 15 seconds...
-        print('=====================================End Content Parsing=====================================================')
 
     def start_download(self):
-        print('=====================================Start Download=====================================================')
         for menu_name, submenus in self.menu_dict.items():
             dirname = self.create_dir(menu_name)
             for submenu in submenus:
@@ -117,18 +103,14 @@ class DownloadClient(OSMixin):
                 subdirname = self.create_subdir(dirname, submenu_name)
                 for resource in submenu['resources']:
                     try:
-                        print('Resource url ====> ', resource.url)
                         try:
                             new_dir = self.create_subdir(subdirname, correct_name_generator(resource.dirname))
                         except Exception as exc:
-                            print('XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX Problem During Resource Dir Creation XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX')
                             print('XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX Resource_Dir => ', new_dir)
                         else:
                             resource.download(new_dir)
                     except requests.exceptions.RequestException:
-                        print('XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX Http Problem XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX')
                         time.sleep(15)
-        print('=====================================End Download=====================================================')
 
     def _send_request(self):
         # implements request execution ordering !!!
