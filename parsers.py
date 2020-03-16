@@ -21,8 +21,6 @@ class BasePageParser:
 
 class MenuPageParser(BasePageParser):
 
-    # BasePageParser.__init__ is called automatically
-    
     def parse(self):
         menu_dict = collections.OrderedDict()
         soup = BeautifulSoup(self._html_stream, self.__class__.DEFAULT_PARSER)
@@ -47,8 +45,6 @@ class MenuPageParser(BasePageParser):
         return menu_dict
 
 class ListPageParser(BasePageParser):
-    
-    # BasePageParser.__init__ is called automatically
 
     ITEM_PER_PAGE = 100 # this is performance optimizer !!! reduce num requests !!! ~ 3x faster than 12 per page
     PAGINATION_SUFFIX = '#list' # this is "fragment identified" SUFFIX for URL
@@ -281,8 +277,6 @@ class JSParser:
         return section_ids
 
 class ContentPageParser(BasePageParser):
-    
-    # BasePageParser.__init__ is called automatically
 
     def parse_related(self, soup):
         inputs = soup.find('div', {'class': 'form-group search-filed'})
